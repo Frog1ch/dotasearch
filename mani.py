@@ -72,7 +72,7 @@ def start(update: Update, context: CallbackContext):
 
 def main():
     # Замените на токен вашего бота
-    token = "YOUR_BOT_TOKEN"
+    token = "7603859590:AAEeyA89ejqEYNimlgmcRSZbQo3B2t2KQHQ"
     updater = Updater(token)
 
     dispatcher = updater.dispatcher
