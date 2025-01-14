@@ -1,9 +1,10 @@
-import flask31
+import time
+from flask import Flask, request, jsonify
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
-import sys
-import time
 import threading
+
+app = Flask(__name__)
 
 # Временная база данных
 temp_db = {}
@@ -22,17 +23,6 @@ def clean_expired_data():
 
 # Фоновый поток для очистки
 threading.Thread(target=clean_expired_data, daemon=True).start()
-
-def start(update: Update, context: CallbackContext):
-    """Обработка команды /start."""
-    url = "https://your-miniapp-url.com"  # URL вашего мини-приложения
-    button = InlineKeyboardButton("Open Mini App", url=url)
-    keyboard = InlineKeyboardMarkup([[button]])
-    update.message.reply_text("Нажмите на кнопку, чтобы открыть мини-приложение:", reply_markup=keyboard)
-
-    context.bot.stop()
-    sys.exit(0)
-
 
 def save_user_data(user_id, data):
     """Сохранение данных пользователя во временную базу."""
@@ -55,9 +45,34 @@ def get_users():
         for user_id, data in temp_db.items()
     ]
 
+@app.route('/save', methods=['POST'])
+def save():
+    """Сохранение данных пользователя."""
+    data = request.json
+    user_id = data.get('userId')
+    user_data = data.get('userData')
+    
+    # Сохранение данных пользователя
+    save_user_data(user_id, user_data)
+    
+    # Возвращаем список активных пользователей
+    return jsonify({'users': get_users()})
+
+@app.route('/get_users', methods=['GET'])
+def get_active_users():
+    """Получение списка активных пользователей."""
+    return jsonify({'users': get_users()})
+
+def start(update: Update, context: CallbackContext):
+    """Обработка команды /start."""
+    url = "https://frog1ch.github.io/dotasearch/"  # URL вашего мини-приложения
+    button = InlineKeyboardButton("Open Mini App", url=url)
+    keyboard = InlineKeyboardMarkup([[button]])
+    update.message.reply_text("Нажмите на кнопку, чтобы открыть мини-приложение:", reply_markup=keyboard)
+
 def main():
     # Замените на токен вашего бота
-    token = "7603859590:AAEeyA89ejqEYNimlgmcRSZbQo3B2t2KQHQOKEN"
+    token = "YOUR_BOT_TOKEN"
     updater = Updater(token)
 
     dispatcher = updater.dispatcher
@@ -67,4 +82,5 @@ def main():
     updater.idle()
 
 if __name__ == "__main__":
+    app.run(port=5001)
     main()
