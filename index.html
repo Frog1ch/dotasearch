@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dota 2 Team Finder</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .form-container {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Find Teammates for Dota 2</h1>
+    <div class="form-container">
+        <label>MMR:</label><br>
+        <input type="number" id="mmr" placeholder="Enter your MMR"><br><br>
+        <label>Role:</label><br>
+        <select id="role">
+            <option value="Carry">Carry</option>
+            <option value="Mid">Mid</option>
+            <option value="Offlane">Offlane</option>
+            <option value="Support">Support</option>
+            <option value="Hard Support">Hard Support</option>
+        </select><br><br>
+        <label>Server:</label><br>
+        <select id="server">
+            <option value="Europe">Europe</option>
+            <option value="US East">US East</option>
+            <option value="US West">US West</option>
+            <option value="SEA">SEA</option>
+        </select><br><br>
+        <button onclick="submitData()">Submit</button>
+    </div>
+    <div id="results"></div>
+    <script>
+        const tg = window.Telegram.WebApp;
+
+        function submitData() {
+            const mmr = document.getElementById('mmr').value;
+            const role = document.getElementById('role').value;
+            const server = document.getElementById('server').value;
+
+            const userData = { mmr, role, server };
+
+            // Отправка данных боту через Telegram Web App
+            fetch('https://your-backend-url.com/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userData, userId: tg.initDataUnsafe.user.id })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Отображение списка пользователей
+                const resultsDiv = document.getElementById('results');
+                resultsDiv.innerHTML = '<h2>Available Teammates:</h2>';
+                data.users.forEach(user => {
+                    resultsDiv.innerHTML += `<p><strong>${user.mmr}</strong> MMR, ${user.role}, ${user.server}</p>`;
+                });
+            });
+        }
+
+        tg.ready();
+    </script>
+</body>
+</html>
