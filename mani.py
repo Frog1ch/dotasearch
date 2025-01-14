@@ -1,10 +1,12 @@
 import time
+from flask_cors import CORS
 from flask import Flask, request, jsonify
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import Updater, CommandHandler, CallbackContext
 import threading
 
 app = Flask(__name__)
+CORS(app)
 
 # Временная база данных
 temp_db = {}
