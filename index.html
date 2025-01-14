@@ -42,32 +42,48 @@
     <div id="results"></div>
     <script>
         const tg = window.Telegram.WebApp;
-
+    
         function submitData() {
             const mmr = document.getElementById('mmr').value;
             const role = document.getElementById('role').value;
             const server = document.getElementById('server').value;
-
+    
+            if (!mmr || !role || !server) {
+                alert('Please fill all fields!');
+                return;
+            }
+    
             const userData = { mmr, role, server };
-
+    
             // Отправка данных боту через Telegram Web App
-            fetch('https://your-backend-url.com/save', {
+            fetch('http://localhost:5001/save', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ userData, userId: tg.initDataUnsafe.user.id })
+                headers: { 
+                    'Content-Type': 'application/json' 
+                },
+                body: JSON.stringify({ userId: tg.initDataUnsafe.user.id, userData })
             })
             .then(response => response.json())
             .then(data => {
                 // Отображение списка пользователей
                 const resultsDiv = document.getElementById('results');
                 resultsDiv.innerHTML = '<h2>Available Teammates:</h2>';
-                data.users.forEach(user => {
-                    resultsDiv.innerHTML += `<p><strong>${user.mmr}</strong> MMR, ${user.role}, ${user.server}</p>`;
-                });
+                if (data.users && data.users.length > 0) {
+                    data.users.forEach(user => {
+                        resultsDiv.innerHTML += `<p><strong>${user.mmr}</strong> MMR, ${user.role}, ${user.server}</p>`;
+                    });
+                } else {
+                    resultsDiv.innerHTML += '<p>No users found.</p>';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again later.');
             });
         }
-
+    
         tg.ready();
-    </script>
+    </script>    
 </body>
 </html>
+
