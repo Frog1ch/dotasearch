@@ -1,0 +1,17 @@
+{
+    "products": [
+        {
+            "id": 1,
+            "name": "Sample Product",
+            "price": 29.99,
+            "image": "https://example.com/image.jpg",
+            "description": "Product description",
+            "category": "category1",
+            "inventory": {
+                "S": 5,
+                "M": 5,
+                "L": 5
+            }
+        }
+    ]
+}
