@@ -3,87 +3,421 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dota 2 Team Finder</title>
+    <title>Fashion Store</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            text-align: center;
+        :root {
+            --tg-theme-bg-color: #ffffff;
+            --tg-theme-text-color: #000000;
+            --tg-theme-button-color: #2481cc;
+            --tg-theme-button-text-color: #ffffff;
         }
-        .form-container {
-            margin: 20px 0;
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .categories {
+            display: flex;
+            gap: 8px;
+            padding: 16px 0;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .category-button {
+            padding: 8px 16px;
+            border: 1px solid #eee;
+            border-radius: 20px;
+            background: none;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .category-button.active {
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border-color: var(--tg-theme-button-color);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+            padding: 16px 0;
+        }
+
+        .product-card {
+            border: 1px solid #eee;
+            border-radius: 8px;
+            overflow: hidden;
+            transition: transform 0.2s;
+        }
+
+        .product-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+
+        .product-info {
+            padding: 12px;
+        }
+
+        .product-title {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .product-description {
+            margin: 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .product-price {
+            margin: 8px 0;
+            font-weight: bold;
+            color: var(--tg-theme-button-color);
+        }
+
+        .add-to-cart {
+            width: 100%;
+            padding: 8px;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .cart-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            padding: 12px 24px;
+            border-radius: 24px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .cart-count {
+            background-color: white;
+            color: var(--tg-theme-button-color);
+            padding: 2px 6px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .product-sizes {
+            display: flex;
+            gap: 8px;
+            margin: 8px 0;
+        }
+
+        .size-button {
+            padding: 4px 8px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+            background: none;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .size-button.selected {
+            background-color: var(--tg-theme-button-color);
+            color: var(--tg-theme-button-text-color);
+            border-color: var(--tg-theme-button-color);
+        }
+
+        .size-button.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #ff4444;
+            font-size: 12px;
+            margin: 4px 0;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <h1>Find Teammates for Dota 2</h1>
-    <div class="form-container">
-        <label>MMR:</label><br>
-        <input type="number" id="mmr" placeholder="Enter your MMR"><br><br>
-        <label>Role:</label><br>
-        <select id="role">
-            <option value="Carry">Carry</option>
-            <option value="Mid">Mid</option>
-            <option value="Offlane">Offlane</option>
-            <option value="Support">Support</option>
-            <option value="Hard Support">Hard Support</option>
-        </select><br><br>
-        <label>Server:</label><br>
-        <select id="server">
-            <option value="Europe">Europe</option>
-            <option value="US East">US East</option>
-            <option value="US West">US West</option>
-            <option value="SEA">SEA</option>
-        </select><br><br>
-        <button onclick="submitData()">Submit</button>
+    <div class="container">
+        <div class="header">
+            <h1>Fashion Store</h1>
+        </div>
+
+        <div class="categories">
+            <button class="category-button active" onclick="filterProducts('all')">All</button>
+            <button class="category-button" onclick="filterProducts('shirts')">Shirts</button>
+            <button class="category-button" onclick="filterProducts('pants')">Pants</button>
+            <button class="category-button" onclick="filterProducts('shoes')">Shoes</button>
+            <button class="category-button" onclick="filterProducts('accessories')">Accessories</button>
+        </div>
+
+        <div class="products-grid" id="products"></div>
+
+        <button class="cart-button" onclick="viewCart()">
+            Cart <span class="cart-count" id="cartCount">0</span>
+        </button>
     </div>
-    <div id="results"></div>
+
     <script>
         const tg = window.Telegram.WebApp;
-    
-        function submitData() {
-            const mmr = document.getElementById('mmr').value;
-            const role = document.getElementById('role').value;
-            const server = document.getElementById('server').value;
-    
-            if (!mmr || !role || !server) {
-                alert('Please fill all fields!');
-                return;
+        let cart = [];
+
+        // Sample product data
+        const products = [
+            {
+                id: 1,
+                name: "Essential Cotton T-Shirt",
+                price: 24.99,
+                image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400",
+                category: "shirts",
+                description: "Classic fit white cotton t-shirt",
+                sizes: ["XS", "S", "M", "L", "XL"],
+                availableSizes: ["S", "M", "L", "XL"]
+            },
+            {
+                id: 2,
+                name: "Striped Polo Shirt",
+                price: 34.99,
+                image: "https://images.unsplash.com/photo-1626497764746-6dc36546b388?w=400",
+                category: "shirts",
+                description: "Casual striped polo in navy blue",
+                sizes: ["XS", "S", "M", "L", "XL"],
+                availableSizes: ["M", "L", "XL"]
+            },
+            {
+                id: 3,
+                name: "Slim Fit Jeans",
+                price: 59.99,
+                image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400",
+                category: "pants",
+                description: "Dark blue slim fit stretch denim",
+                sizes: ["28", "30", "32", "34", "36"],
+                availableSizes: ["30", "32", "34"]
+            },
+            {
+                id: 4,
+                name: "Chino Pants",
+                price: 49.99,
+                image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400",
+                category: "pants",
+                description: "Classic khaki chino pants",
+                sizes: ["28", "30", "32", "34", "36"],
+                availableSizes: ["28", "30", "32", "34", "36"]
+            },
+            {
+                id: 5,
+                name: "Running Sneakers",
+                price: 89.99,
+                image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",
+                category: "shoes",
+                description: "Lightweight mesh running shoes",
+                sizes: ["7", "8", "9", "10", "11", "12"],
+                availableSizes: ["8", "9", "10", "11"]
+            },
+            {
+                id: 6,
+                name: "Leather Boots",
+                price: 129.99,
+                image: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=400",
+                category: "shoes",
+                description: "Classic brown leather boots",
+                sizes: ["7", "8", "9", "10", "11", "12"],
+                availableSizes: ["7", "8", "9", "10", "12"]
+            },
+            {
+                id: 7,
+                name: "Leather Belt",
+                price: 29.99,
+                image: "https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=400",
+                category: "accessories",
+                description: "Brown genuine leather belt",
+                sizes: ["S", "M", "L", "XL"],
+                availableSizes: ["S", "M", "L", "XL"]
+            },
+            {
+                id: 8,
+                name: "Classic Watch",
+                price: 149.99,
+                image: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400",
+                category: "accessories",
+                description: "Minimalist analog watch",
+                sizes: ["One Size"],
+                availableSizes: ["One Size"]
+            },
+            {
+                id: 9,
+                name: "Denim Jacket",
+                price: 79.99,
+                image: "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=400",
+                category: "shirts",
+                description: "Classic blue denim jacket",
+                sizes: ["XS", "S", "M", "L", "XL"],
+                availableSizes: ["S", "M", "L"]
+            },
+            {
+                id: 10,
+                name: "Canvas Sneakers",
+                price: 44.99,
+                image: "https://images.unsplash.com/photo-1463100099107-aa0980c362e6?w=400",
+                category: "shoes",
+                description: "Low-top white canvas sneakers",
+                sizes: ["7", "8", "9", "10", "11", "12"],
+                availableSizes: ["7", "8", "9", "10", "11"]
             }
-    
-            const userData = { mmr, role, server };
-    
-            // Отправка данных боту через Telegram Web App
-            fetch('http://localhost:5001/save', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json' 
-                },
-                body: JSON.stringify({ userId: tg.initDataUnsafe.user.id, userData })
-            })
-            .then(response => response.json())
-            .then(data => {
-                // Отображение списка пользователей
-                const resultsDiv = document.getElementById('results');
-                resultsDiv.innerHTML = '<h2>Available Teammates:</h2>';
-                if (data.users && data.users.length > 0) {
-                    data.users.forEach(user => {
-                        resultsDiv.innerHTML += `<p><strong>${user.mmr}</strong> MMR, ${user.role}, ${user.server}</p>`;
-                    });
-                } else {
-                    resultsDiv.innerHTML += '<p>No users found.</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('An error occurred. Please try again later.');
+        ];
+
+        let selectedSizes = {};
+
+        function renderProducts(filterCategory = 'all') {
+            const productsContainer = document.getElementById('products');
+            productsContainer.innerHTML = '';
+
+            const filteredProducts = filterCategory === 'all' 
+                ? products 
+                : products.filter(p => p.category === filterCategory);
+
+            filteredProducts.forEach(product => {
+                const productElement = document.createElement('div');
+                productElement.className = 'product-card';
+                productElement.innerHTML = `
+                    <img src="${product.image}" alt="${product.name}" class="product-image">
+                    <div class="product-info">
+                        <h3 class="product-title">${product.name}</h3>
+                        <p class="product-description">${product.description}</p>
+                        <p class="product-price">$${product.price}</p>
+                        <div class="product-sizes">
+                            ${product.sizes.map(size => `
+                                <button 
+                                    class="size-button ${!product.availableSizes.includes(size) ? 'disabled' : ''} ${selectedSizes[product.id] === size ? 'selected' : ''}"
+                                    onclick="selectSize(${product.id}, '${size}')"
+                                    ${!product.availableSizes.includes(size) ? 'disabled' : ''}
+                                >${size}</button>
+                            `).join('')}
+                        </div>
+                        <p class="error-message" id="error-${product.id}">Please select a size</p>
+                        <button class="add-to-cart" onclick="addToCart(${product.id})">Add to Cart</button>
+                    </div>
+                `;
+                productsContainer.appendChild(productElement);
             });
         }
-    
+
+        function selectSize(productId, size) {
+            const product = products.find(p => p.id === productId);
+            if (!product.availableSizes.includes(size)) return;
+            
+            selectedSizes[productId] = size;
+            document.getElementById(`error-${productId}`).style.display = 'none';
+            renderProducts(document.querySelector('.category-button.active').textContent.toLowerCase());
+        }
+
+        function filterProducts(category) {
+            document.querySelectorAll('.category-button').forEach(button => {
+                button.classList.remove('active');
+                if(button.textContent.toLowerCase() === category || 
+                   (category === 'all' && button.textContent === 'All')) {
+                    button.classList.add('active');
+                }
+            });
+            renderProducts(category);
+        }
+
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const errorElement = document.getElementById(`error-${productId}`);
+            
+            if (!selectedSizes[productId] && product.sizes.length > 1) {
+                errorElement.style.display = 'block';
+                tg.HapticFeedback.notificationOccurred('error');
+                return;
+            }
+
+            const size = selectedSizes[productId] || product.sizes[0];
+            const cartItem = {
+                ...product,
+                selectedSize: size
+            };
+            
+            cart.push(cartItem);
+            updateCartCount();
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        function updateCartCount() {
+            document.getElementById('cartCount').textContent = cart.length;
+        }
+
+        function viewCart() {
+            if (cart.length === 0) {
+                tg.showPopup({
+                    title: 'Cart is Empty',
+                    message: 'Add some items to your cart first!',
+                    buttons: [{type: 'ok'}]
+                });
+                return;
+            }
+
+            const total = cart.reduce((sum, item) => sum + item.price, 0).toFixed(2);
+            const cartItems = cart.map(item => 
+                `${item.name} - Size: ${item.selectedSize} - $${item.price}`
+            ).join('\n');
+            
+            tg.showPopup({
+                title: 'Your Cart',
+                message: `${cartItems}\n\nTotal: $${total}`,
+                buttons: [
+                    {type: 'ok', id: 'checkout', text: 'Checkout'},
+                    {type: 'cancel', text: 'Continue Shopping'}
+                ]
+            });
+        }
+
+        // Initialize
         tg.ready();
-    </script>    
+        tg.expand();
+        renderProducts();
+
+        // Handle theme changes
+        tg.onEvent('themeChanged', () => {
+            document.documentElement.style.setProperty('--tg-theme-bg-color', tg.themeParams.bg_color);
+            document.documentElement.style.setProperty('--tg-theme-text-color', tg.themeParams.text_color);
+            document.documentElement.style.setProperty('--tg-theme-button-color', tg.themeParams.button_color);
+            document.documentElement.style.setProperty('--tg-theme-button-text-color', tg.themeParams.button_text_color);
+        });
+    </script>
 </body>
 </html>
-
