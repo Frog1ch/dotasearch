@@ -4,29 +4,39 @@ import json
 import os
 from datetime import datetime
 
-app = Flask(__name__)
+app = Flask(__name__, static_url_path='')
 CORS(app)
+
+# Get the base directory for the application
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 # Load products from JSON file
 def load_products():
     try:
-        with open('products.json', 'r') as f:
+        products_path = os.path.join(BASE_DIR, 'products.json')
+        with open(products_path, 'r') as f:
             return json.load(f)
     except FileNotFoundError:
         return {'products': []}
 
 # Save products to JSON file
 def save_products(products):
-    with open('products.json', 'w') as f:
+    products_path = os.path.join(BASE_DIR, 'products.json')
+    with open(products_path, 'w') as f:
         json.dump(products, f, indent=4)
 
 # Serve static files
-@app.route('/', defaults={'path': 'index.html'})
+@app.route('/')
+def serve_index():
+    return send_from_directory(BASE_DIR, 'index.html')
+
+@app.route('/admin')
+def serve_admin():
+    return send_from_directory(BASE_DIR, 'admin.html')
+
 @app.route('/<path:path>')
-def serve(path):
-    if path == "":
-        path = "index.html"
-    return send_from_directory('.', path)
+def serve_static(path):
+    return send_from_directory(BASE_DIR, path)
 
 # Get all products or filter by category
 @app.route('/api/products', methods=['GET'])
@@ -164,8 +174,6 @@ def create_order():
             'timestamp': datetime.now().isoformat()
         }
         
-        # In a real app, save order to database
-        # For now, we'll just return the order
         return jsonify({'order': order, 'message': 'Order processed successfully'}), 201
         
     except Exception as e:
