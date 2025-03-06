@@ -4,7 +4,7 @@ from datetime import datetime
 import os
 import json
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.')
 CORS(app)
 
 PRODUCTS_FILE = 'products.json'
@@ -25,6 +25,14 @@ products_db = load_products()
 @app.route('/')
 def serve_index():
     return send_from_directory('.', 'index.html')
+
+@app.route('/admin')
+def serve_admin():
+    return send_from_directory('.', 'admin.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory('.', path)
 
 @app.route('/api/products', methods=['GET'])
 def get_products():
@@ -161,4 +169,5 @@ def create_order():
     return jsonify({"order": order})
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5001)
+    port = int(os.environ.get("PORT", 5001))
+    app.run(host='0.0.0.0', port=port)
