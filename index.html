@@ -195,122 +195,33 @@
     <script>
         const tg = window.Telegram.WebApp;
         let cart = [];
-
-        // Sample product data
-        const products = [
-            {
-                id: 1,
-                name: "Essential Cotton T-Shirt",
-                price: 24.99,
-                image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400",
-                category: "shirts",
-                description: "Classic fit white cotton t-shirt",
-                sizes: ["XS", "S", "M", "L", "XL"],
-                availableSizes: ["S", "M", "L", "XL"]
-            },
-            {
-                id: 2,
-                name: "Striped Polo Shirt",
-                price: 34.99,
-                image: "https://images.unsplash.com/photo-1626497764746-6dc36546b388?w=400",
-                category: "shirts",
-                description: "Casual striped polo in navy blue",
-                sizes: ["XS", "S", "M", "L", "XL"],
-                availableSizes: ["M", "L", "XL"]
-            },
-            {
-                id: 3,
-                name: "Slim Fit Jeans",
-                price: 59.99,
-                image: "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?w=400",
-                category: "pants",
-                description: "Dark blue slim fit stretch denim",
-                sizes: ["28", "30", "32", "34", "36"],
-                availableSizes: ["30", "32", "34"]
-            },
-            {
-                id: 4,
-                name: "Chino Pants",
-                price: 49.99,
-                image: "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=400",
-                category: "pants",
-                description: "Classic khaki chino pants",
-                sizes: ["28", "30", "32", "34", "36"],
-                availableSizes: ["28", "30", "32", "34", "36"]
-            },
-            {
-                id: 5,
-                name: "Running Sneakers",
-                price: 89.99,
-                image: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400",
-                category: "shoes",
-                description: "Lightweight mesh running shoes",
-                sizes: ["7", "8", "9", "10", "11", "12"],
-                availableSizes: ["8", "9", "10", "11"]
-            },
-            {
-                id: 6,
-                name: "Leather Boots",
-                price: 129.99,
-                image: "https://images.unsplash.com/photo-1608256246200-53e635b5b65f?w=400",
-                category: "shoes",
-                description: "Classic brown leather boots",
-                sizes: ["7", "8", "9", "10", "11", "12"],
-                availableSizes: ["7", "8", "9", "10", "12"]
-            },
-            {
-                id: 7,
-                name: "Leather Belt",
-                price: 29.99,
-                image: "https://images.unsplash.com/photo-1624222247344-550fb60583dc?w=400",
-                category: "accessories",
-                description: "Brown genuine leather belt",
-                sizes: ["S", "M", "L", "XL"],
-                availableSizes: ["S", "M", "L", "XL"]
-            },
-            {
-                id: 8,
-                name: "Classic Watch",
-                price: 149.99,
-                image: "https://images.unsplash.com/photo-1524592094714-0f0654e20314?w=400",
-                category: "accessories",
-                description: "Minimalist analog watch",
-                sizes: ["One Size"],
-                availableSizes: ["One Size"]
-            },
-            {
-                id: 9,
-                name: "Denim Jacket",
-                price: 79.99,
-                image: "https://images.unsplash.com/photo-1576871337632-b9aef4c17ab9?w=400",
-                category: "shirts",
-                description: "Classic blue denim jacket",
-                sizes: ["XS", "S", "M", "L", "XL"],
-                availableSizes: ["S", "M", "L"]
-            },
-            {
-                id: 10,
-                name: "Canvas Sneakers",
-                price: 44.99,
-                image: "https://images.unsplash.com/photo-1463100099107-aa0980c362e6?w=400",
-                category: "shoes",
-                description: "Low-top white canvas sneakers",
-                sizes: ["7", "8", "9", "10", "11", "12"],
-                availableSizes: ["7", "8", "9", "10", "11"]
-            }
-        ];
-
         let selectedSizes = {};
 
-        function renderProducts(filterCategory = 'all') {
+        // Fetch products from backend
+        async function fetchProducts(category = 'all') {
+            try {
+                const response = await fetch(`/api/products?category=${category}`);
+                const data = await response.json();
+                return data.products;
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                tg.showPopup({
+                    title: 'Error',
+                    message: 'Failed to load products. Please try again.',
+                    buttons: [{type: 'ok'}]
+                });
+                return [];
+            }
+        }
+
+        async function renderProducts(filterCategory = 'all') {
             const productsContainer = document.getElementById('products');
+            productsContainer.innerHTML = '<p>Loading products...</p>';
+
+            const products = await fetchProducts(filterCategory);
             productsContainer.innerHTML = '';
 
-            const filteredProducts = filterCategory === 'all' 
-                ? products 
-                : products.filter(p => p.category === filterCategory);
-
-            filteredProducts.forEach(product => {
+            products.forEach(product => {
                 const productElement = document.createElement('div');
                 productElement.className = 'product-card';
                 productElement.innerHTML = `
@@ -322,9 +233,9 @@
                         <div class="product-sizes">
                             ${product.sizes.map(size => `
                                 <button 
-                                    class="size-button ${!product.availableSizes.includes(size) ? 'disabled' : ''} ${selectedSizes[product.id] === size ? 'selected' : ''}"
+                                    class="size-button ${!(product.inventory && product.inventory[size]) ? 'disabled' : ''} ${selectedSizes[product.id] === size ? 'selected' : ''}"
                                     onclick="selectSize(${product.id}, '${size}')"
-                                    ${!product.availableSizes.includes(size) ? 'disabled' : ''}
+                                    ${!(product.inventory && product.inventory[size]) ? 'disabled' : ''}
                                 >${size}</button>
                             `).join('')}
                         </div>
@@ -334,6 +245,56 @@
                 `;
                 productsContainer.appendChild(productElement);
             });
+        }
+
+        async function checkout() {
+            if (!tg.initDataUnsafe.user) {
+                tg.showPopup({
+                    title: 'Error',
+                    message: 'Please open this store through Telegram.',
+                    buttons: [{type: 'ok'}]
+                });
+                return;
+            }
+
+            const orderItems = cart.map(item => ({
+                id: item.id,
+                size: item.selectedSize
+            }));
+
+            try {
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId: tg.initDataUnsafe.user.id,
+                        items: orderItems
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    cart = [];
+                    updateCartCount();
+                    tg.showPopup({
+                        title: 'Success',
+                        message: 'Your order has been placed! Order ID: ' + data.order.id,
+                        buttons: [{type: 'ok'}]
+                    });
+                    tg.MainButton.hide();
+                } else {
+                    throw new Error(data.error || 'Failed to place order');
+                }
+            } catch (error) {
+                tg.showPopup({
+                    title: 'Error',
+                    message: error.message || 'Failed to place order. Please try again.',
+                    buttons: [{type: 'ok'}]
+                });
+            }
         }
 
         function selectSize(productId, size) {
@@ -403,12 +364,22 @@
                     {type: 'ok', id: 'checkout', text: 'Checkout'},
                     {type: 'cancel', text: 'Continue Shopping'}
                 ]
+            }).then(button => {
+                if (button === 'checkout') {
+                    checkout();
+                }
             });
         }
 
         // Initialize
         tg.ready();
         tg.expand();
+        
+        // Set up main button for checkout
+        tg.MainButton.setText('Checkout');
+        tg.MainButton.onClick(checkout);
+
+        // Initial product load
         renderProducts();
 
         // Handle theme changes
