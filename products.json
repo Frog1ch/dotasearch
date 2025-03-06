@@ -2,11 +2,11 @@
     "products": [
         {
             "id": 1,
-            "name": "Sample Product",
+            "name": "Classic White T-Shirt",
             "price": 29.99,
-            "image": "https://www.google.com/url?sa=i&url=https%3A%2F%2Fwww.istockphoto.com%2Fru%2F%25D1%2584%25D0%25BE%25D1%2582%25D0%25BE%25D0%25B3%25D1%2580%25D0%25B0%25D1%2584%25D0%25B8%25D0%25B8%2F%25D1%2581%25D0%25BE%25D0%25B1%25D0%25B0%25D0%25BA%25D0%25B0&psig=AOvVaw0dHtjGiQNH_jh7lPc65eBN&ust=1741305713889000&source=images&cd=vfe&opi=89978449&ved=0CBEQjRxqFwoTCNihr7aT9IsDFQAAAAAdAAAAABAE",
-            "description": "Product description",
-            "category": "category1",
+            "image": "https://placehold.co/300x200?text=White+T-Shirt",
+            "description": "Comfortable cotton t-shirt perfect for everyday wear",
+            "category": "shirts",
             "inventory": {
                 "S": 5,
                 "M": 5,
