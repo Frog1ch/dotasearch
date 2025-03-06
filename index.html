@@ -182,13 +182,6 @@
             opacity: 0.8;
         }
 
-        .error-message {
-            color: #ff3b30;
-            font-size: 12px;
-            margin-top: 4px;
-            display: none;
-        }
-
         .cart-button {
             position: fixed;
             bottom: 16px;
@@ -202,55 +195,27 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            font-weight: 500;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            z-index: 100;
+            z-index: 1000;
         }
 
         .cart-count {
-            background: var(--tg-theme-button-text-color);
+            background-color: var(--tg-theme-button-text-color);
             color: var(--tg-theme-button-color);
-            min-width: 20px;
-            height: 20px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            padding: 2px 6px;
+            border-radius: 12px;
             font-size: 12px;
             font-weight: 600;
-            padding: 0 6px;
         }
 
-        @media (min-width: 768px) {
-            .container {
-                max-width: 768px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            }
+        @keyframes addToCart {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
         }
 
-        @media (min-width: 1024px) {
-            .container {
-                max-width: 1024px;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-            }
-        }
-
-        .loading {
-            text-align: center;
-            padding: 32px;
-            color: var(--tg-theme-hint-color);
-        }
-
-        .empty-state {
-            text-align: center;
-            padding: 48px 16px;
-            color: var(--tg-theme-hint-color);
+        .add-to-cart-animation {
+            animation: addToCart 0.3s ease-in-out;
         }
     </style>
 </head>
@@ -261,223 +226,152 @@
         </div>
 
         <div class="categories">
-            <button class="category-button active" onclick="filterProducts('all')">All</button>
-            <button class="category-button" onclick="filterProducts('shirts')">Shirts</button>
-            <button class="category-button" onclick="filterProducts('pants')">Pants</button>
-            <button class="category-button" onclick="filterProducts('shoes')">Shoes</button>
-            <button class="category-button" onclick="filterProducts('accessories')">Accessories</button>
+            <button class="category-button active" onclick="renderProducts('all')">All</button>
+            <button class="category-button" onclick="renderProducts('outerwear')">Outerwear</button>
+            <button class="category-button" onclick="renderProducts('pants')">Pants</button>
+            <button class="category-button" onclick="renderProducts('shoes')">Shoes</button>
         </div>
 
-        <div class="products-grid" id="products"></div>
+        <div class="products-grid" id="products-grid"></div>
 
         <button class="cart-button" onclick="checkout()">
-            Cart <span class="cart-count" id="cartCount">0</span>
+            Cart <span class="cart-count">0</span>
         </button>
     </div>
 
     <script>
-        const tg = window.Telegram.WebApp;
-        const API_URL = 'https://waka-r6hz.onrender.com';
-        let cart = [];
-        let selectedSizes = {};
-        let currentProducts = [];
-
-        // Initialize Telegram Web App
-        tg.ready();
+        let tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Cart functions
+        let cart = [];
+        let selectedSizes = {};
+
         function selectSize(productId, size) {
             selectedSizes[productId] = size;
-            document.querySelectorAll(`.size-button[onclick*="${productId}"]`).forEach(btn => {
-                btn.classList.toggle('selected', btn.textContent.trim() === size);
+            document.querySelectorAll(`.size-button[data-product="${productId}"]`).forEach(btn => {
+                btn.classList.toggle('selected', btn.dataset.size === size);
             });
-            document.getElementById(`error-${productId}`).style.display = 'none';
         }
 
         function addToCart(productId) {
-            const product = currentProducts.find(p => p.id === productId);
-            if (!product) return;
-
             const size = selectedSizes[productId];
             if (!size) {
-                const errorEl = document.getElementById(`error-${productId}`);
-                errorEl.textContent = 'Please select a size';
-                errorEl.style.display = 'block';
+                alert('Please select a size first');
                 return;
             }
 
-            const inventory = product.inventory[size];
-            if (!inventory || inventory <= 0) {
-                const errorEl = document.getElementById(`error-${productId}`);
-                errorEl.textContent = 'Size out of stock';
-                errorEl.style.display = 'block';
-                return;
-            }
-
-            const existingItem = cart.find(item => item.id === productId && item.size === size);
+            const existingItem = cart.find(item => item.productId === productId && item.size === size);
             if (existingItem) {
-                if (existingItem.quantity >= inventory) {
-                    const errorEl = document.getElementById(`error-${productId}`);
-                    errorEl.textContent = 'No more items available in this size';
-                    errorEl.style.display = 'block';
-                    return;
-                }
-                existingItem.quantity++;
+                existingItem.quantity += 1;
             } else {
                 cart.push({
-                    id: productId,
-                    name: product.name,
-                    price: product.price,
+                    productId: productId,
                     size: size,
-                    quantity: 1,
-                    image: product.image
+                    quantity: 1
                 });
             }
 
-            updateCartButton();
             showAddToCartAnimation(productId);
+            updateCartButton();
+            tg.MainButton.show();
         }
 
         function showAddToCartAnimation(productId) {
-            const button = document.querySelector(`button[onclick="addToCart(${productId})"]`);
-            button.classList.add('adding');
-            setTimeout(() => button.classList.remove('adding'), 300);
+            const button = document.querySelector(`[data-product-id="${productId}"]`);
+            button.classList.add('add-to-cart-animation');
+            setTimeout(() => button.classList.remove('add-to-cart-animation'), 300);
         }
 
         function updateCartButton() {
             const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            const cartCount = document.querySelector('.cart-count');
-            cartCount.textContent = totalItems;
-            
-            if (totalItems > 0) {
-                tg.MainButton.setText(`Checkout (${totalItems} items)`);
-                tg.MainButton.show();
-            } else {
-                tg.MainButton.hide();
+            document.querySelector('.cart-count').textContent = totalItems;
+        }
+
+        async function checkout() {
+            if (cart.length === 0) {
+                alert('Your cart is empty');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/orders', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        items: cart,
+                        telegramUserId: tg.initDataUnsafe?.user?.id
+                    })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    cart = [];
+                    selectedSizes = {};
+                    updateCartButton();
+                    tg.MainButton.hide();
+                    alert('Order placed successfully!');
+                    renderProducts();
+                } else {
+                    const error = await response.json();
+                    alert(error.error || 'Failed to place order');
+                }
+            } catch (error) {
+                alert('Error placing order: ' + error.message);
             }
         }
 
-        function checkout() {
-            if (cart.length === 0) return;
-
-            const orderData = {
-                items: cart.map(item => ({
-                    productId: item.id,
-                    size: item.size,
-                    quantity: item.quantity,
-                    price: item.price
-                })),
-                total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-                telegramUserId: tg.initDataUnsafe?.user?.id
-            };
-
-            tg.MainButton.showProgress();
-            
-            fetch(`${API_URL}/api/orders`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(orderData)
-            })
-            .then(response => {
-                if (!response.ok) throw new Error('Order failed');
-                return response.json();
-            })
-            .then(data => {
-                cart = [];
-                selectedSizes = {};
-                updateCartButton();
-                tg.MainButton.hideProgress();
-                tg.showPopup({
-                    title: 'Order Successful',
-                    message: 'Your order has been placed successfully!',
-                    buttons: [{type: 'ok'}]
-                });
-            })
-            .catch(error => {
-                console.error('Error placing order:', error);
-                tg.MainButton.hideProgress();
-                tg.showPopup({
-                    title: 'Order Failed',
-                    message: 'There was an error placing your order. Please try again.',
-                    buttons: [{type: 'ok'}]
-                });
-            });
-        }
-
-        // Fetch products from backend
         async function fetchProducts(category = 'all') {
             try {
-                const response = await fetch(`${API_URL}/api/products?category=${category}`);
-                if (!response.ok) throw new Error('Failed to load products');
+                const response = await fetch(`/api/products?category=${category}`);
                 const data = await response.json();
-                currentProducts = data.products || [];  
-                return currentProducts;
+                return data.products;
             } catch (error) {
                 console.error('Error fetching products:', error);
-                tg.showPopup({
-                    title: 'Error',
-                    message: 'Failed to load products. Please try again.',
-                    buttons: [{type: 'ok'}]
-                });
                 return [];
             }
         }
 
-        // Render products
         async function renderProducts(filterCategory = 'all') {
-            const productsContainer = document.getElementById('products');
-            productsContainer.innerHTML = '<div style="text-align: center; padding: 20px;">Loading products...</div>';
-            
-            const products = await fetchProducts(filterCategory);
-            
-            if (!products || products.length === 0) {
-                productsContainer.innerHTML = '<div style="text-align: center; padding: 20px;">No products found</div>';
-                return;
-            }
-
-            productsContainer.innerHTML = products.map(product => {
-                const productSizes = Object.entries(product.inventory || {})
-                    .filter(([_, qty]) => qty > 0)
-                    .map(([size, qty]) => size);
-
-                return `
-                    <div class="product-card">
-                        <img src="${product.image}" 
-                             alt="${product.name}" 
-                             class="product-image"
-                             onerror="this.src='https://placehold.co/300x200?text=No+Image'">
-                        <div class="product-info">
-                            <h3 class="product-title">${product.name}</h3>
-                            <p class="product-description">${product.description}</p>
-                            <p class="product-price">$${product.price.toFixed(2)}</p>
-                            <div class="product-sizes">
-                                ${productSizes.map(size => `
-                                    <button class="size-button ${selectedSizes[product.id] === size ? 'selected' : ''}" 
-                                            onclick="selectSize(${product.id}, '${size}')">
-                                        ${size}
-                                    </button>
-                                `).join('')}
-                            </div>
-                            <div class="error-message" id="error-${product.id}"></div>
-                            <button class="add-to-cart" onclick="addToCart(${product.id})">
-                                Add to Cart
-                            </button>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            // Update category buttons
-            document.querySelectorAll('.category-button').forEach(button => {
-                const category = button.getAttribute('onclick').match(/'([^']+)'/)[1];
-                button.classList.toggle('active', category === filterCategory);
+            document.querySelectorAll('.category-button').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent.toLowerCase() === filterCategory.toLowerCase());
             });
+
+            const products = await fetchProducts(filterCategory);
+            const grid = document.getElementById('products-grid');
+            
+            grid.innerHTML = products.map(product => `
+                <div class="product-card">
+                    <img class="product-image" src="${product.image}" alt="${product.name}">
+                    <div class="product-info">
+                        <h3 class="product-title">${product.name}</h3>
+                        <p class="product-description">${product.description}</p>
+                        <div class="product-price">$${product.price.toFixed(2)}</div>
+                        <div class="product-sizes">
+                            ${Object.entries(product.inventory).map(([size, quantity]) => `
+                                <button class="size-button ${selectedSizes[product.id] === size ? 'selected' : ''}"
+                                        onclick="selectSize(${product.id}, '${size}')"
+                                        data-product="${product.id}"
+                                        data-size="${size}"
+                                        ${quantity === 0 ? 'disabled' : ''}>
+                                    ${size}
+                                </button>
+                            `).join('')}
+                        </div>
+                        <button class="add-to-cart" 
+                                onclick="addToCart(${product.id})"
+                                data-product-id="${product.id}">
+                            Add to Cart
+                        </button>
+                    </div>
+                </div>
+            `).join('');
         }
 
         // Initialize
+        tg.MainButton.setText('Checkout');
+        tg.MainButton.hide();
         tg.MainButton.onClick(checkout);
         renderProducts();
     </script>
