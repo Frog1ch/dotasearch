@@ -3,12 +3,22 @@ from flask_cors import CORS
 import json
 import os
 from datetime import datetime
+from database import db, Action
 
 app = Flask(__name__, static_url_path='')
 CORS(app)
 
 # Get the base directory for the application
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# Database configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///actions.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db.init_app(app)
+
+# Create tables on startup
+with app.app_context():
+    db.create_all()
 
 # Load products from JSON file
 def load_products():
@@ -177,6 +187,42 @@ def create_order():
         return jsonify({'order': order, 'message': 'Order processed successfully'}), 201
         
     except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+# Action endpoints
+@app.route('/api/actions', methods=['GET'])
+def get_actions():
+    actions = Action.query.filter_by(is_active=True).order_by(Action.created_at.desc()).all()
+    return jsonify([action.to_dict() for action in actions])
+
+@app.route('/api/actions', methods=['POST'])
+def create_action():
+    try:
+        data = request.json
+        if not data.get('title') or not data.get('description'):
+            return jsonify({'error': 'Title and description are required'}), 400
+
+        new_action = Action(
+            title=data['title'],
+            description=data['description'],
+            image_url=data.get('image_url')
+        )
+        db.session.add(new_action)
+        db.session.commit()
+        return jsonify(new_action.to_dict()), 201
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/actions/<int:action_id>', methods=['DELETE'])
+def delete_action(action_id):
+    try:
+        action = Action.query.get_or_404(action_id)
+        action.is_active = False
+        db.session.commit()
+        return '', 204
+    except Exception as e:
+        db.session.rollback()
         return jsonify({'error': str(e)}), 400
 
 if __name__ == '__main__':
